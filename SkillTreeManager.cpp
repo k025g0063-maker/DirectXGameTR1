@@ -1,6 +1,4 @@
 #include "SkillTreeManager.h"
-
-// ★メインファイルと同じように、インクルードパスの「externals/」を外しました
 #include "imgui.h"
 
 // コンストラクタ

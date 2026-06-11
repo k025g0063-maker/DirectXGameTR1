@@ -41,7 +41,7 @@ public:
 
 	// --- メンバ関数（処理） ---
 
-	// マウスがスキルの円の中に入っているかを判定する関数（2Dの三平方の定理）
+	// マウスがスキルの円の中に入っているかを判定する関数
 	bool IsMouseOver(float mouseX, float mouseY) {
 		float dx = mouseX - x;
 		float dy = mouseY - y;

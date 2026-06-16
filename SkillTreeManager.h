@@ -4,30 +4,34 @@
 
 class SkillTreeManager {
 private:
-	std::vector<SkillCategory> categories; // すべてのカテゴリー（ステータス、体技など）
-	int currentCategoryIndex;              // 現在表示しているカテゴリーの番号（0:ステータス、1:体技...）
-	int playerSP;                          // プレイヤーの所持SP
+	// ===================================================
+	// メンバ変数
+	// ===================================================
+	std::vector<SkillCategory> categories; // すべてのスキルカテゴリーを保持する配列
+	int currentCategoryIndex;              // 現在画面に表示しているタブカテゴリーの配列番号
+	int playerSP;                          // プレイヤーが現在所有しているスキルポイント
+
+	float playerAttackPower; // プレイヤーの現在の攻撃力
+	float playerMaxHP;       // プレイヤーの現在の最大HP
+	float playerMoveSpeed;   // プレイヤーの現在の移動速度
 
 	// ===================================================
-	// 【追加】プレイヤーのステータス実変数
+	// 内部処理用プライベート関数
 	// ===================================================
-	float playerAttackPower; // 攻撃力
-	float playerMaxHP;       // 最大HP
-	float playerMoveSpeed;   // 移動速度
-
-	// ===================================================
-	// 【追加】内部処理用のプライベート関数
-	// ===================================================
-	void ApplySkillEffect(int skillId);
+	void ApplySkillEffect(int skillId); // スキルの効果をプレイヤーパラメータに加算する処理
+	void ResetAllSkills();              // すべてのスキルとステータスを初期状態に巻き戻す処理
 
 public:
+	// ===================================================
+	// メンバ関数
+	// ===================================================
 	SkillTreeManager();
 
-	void Initialize();                                            // スキルデータの初期化
-	void Update(float mouseX, float mouseY, bool isMouseClicked); // 更新処理
-	void Draw();                                                  // 描画処理
+	void Initialize();                                            // 全てのスキル構造データを構築・初期化する関数
+	void Update(float mouseX, float mouseY, bool isMouseClicked); // マウスクリック等によるシステム状態の更新関数
+	void Draw();                                                  // ImGuiを用いたグラフィカルな画面描画関数
 
-	// 便利なゲッター
+	// 外部から各データを安全に取得するためのゲッター関数群
 	int GetPlayerSP() const { return playerSP; }
 	int GetCurrentCategoryIndex() const { return currentCategoryIndex; }
 	std::vector<SkillCategory>& GetCategories() { return categories; }

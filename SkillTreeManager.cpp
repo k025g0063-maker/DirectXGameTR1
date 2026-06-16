@@ -1,10 +1,18 @@
 #include "SkillTreeManager.h"
 #include "imgui.h"
 
+// ===================================================
 // コンストラクタ
-SkillTreeManager::SkillTreeManager() : currentCategoryIndex(0), playerSP(10) {}
+// ===================================================
+SkillTreeManager::SkillTreeManager()
+    : currentCategoryIndex(0), playerSP(10), playerAttackPower(10.0f), // 初期攻撃力
+      playerMaxHP(100.0f),                                             // 初期最大HP
+      playerMoveSpeed(2.0f)                                            // 初期移動速度
+{}
 
+// ===================================================
 // スキルツリーのデータ初期化
+// ===================================================
 void SkillTreeManager::Initialize() {
 	categories.clear();
 
@@ -48,7 +56,36 @@ void SkillTreeManager::Initialize() {
 	categories.push_back(tansakuCategory);
 }
 
+// ===================================================
+// スキルレベルアップ時のステータス反映処理（内部処理）
+// ===================================================
+void SkillTreeManager::ApplySkillEffect(int skillId) {
+	// スキルのIDに応じてプレイヤーの能力値を上昇させる
+	switch (skillId) {
+	case 1: // 腕立て伏せ
+		playerAttackPower += 1.0f;
+		break;
+	case 2: // 物理攻撃アップ
+		playerAttackPower += 5.0f;
+		break;
+	case 3: // 最大HPアップ(腕)
+	case 6: // 最大HPアップ(脚)
+		playerMaxHP += 20.0f;
+		break;
+	case 4: // スクワット
+		playerMoveSpeed += 0.2f;
+		break;
+	case 5: // 素早さアップ
+		playerMoveSpeed += 0.5f;
+		break;
+	default:
+		break;
+	}
+}
+
+// ===================================================
 // 更新処理
+// ===================================================
 void SkillTreeManager::Update(float mouseX, float mouseY, bool isMouseClicked) {
 	if (categories.empty())
 		return;
@@ -60,6 +97,10 @@ void SkillTreeManager::Update(float mouseX, float mouseY, bool isMouseClicked) {
 				if (playerSP >= skill.requiredSP) {
 					playerSP -= skill.requiredSP;
 					skill.LevelUp();
+
+					// スキルの効果をプレイヤーに適用
+					ApplySkillEffect(skill.id);
+
 					currentCategory.UpdateSkillStates();
 				}
 			}
@@ -67,19 +108,44 @@ void SkillTreeManager::Update(float mouseX, float mouseY, bool isMouseClicked) {
 	}
 }
 
+// ===================================================
 // 描画処理
+// ===================================================
 void SkillTreeManager::Draw() {
-	// 1. スキルツリー用のウィンドウを作成
-	ImGui::Begin("スキルツリー画面");
+	// 【修正】これですべての要素がこの一つの大きなウィンドウの中に綺麗に収まります！
+	ImGui::Begin("スキルツリー 開発画面", nullptr, ImGuiWindowFlags_NoScrollbar);
 
-	// プレイヤーの所持SPを表示
+	// ---------------------------------------------------
+	// 1. プレイヤーのステータス表示エリア（最上部に配置）
+	// ---------------------------------------------------
+	// 横幅はウィンドウ全体（0）、高さ75ピクセルの固定枠にします
+	ImGui::BeginChild("StatusFrame", ImVec2(0, 75), true);
+
+	ImGui::Text("【 プレイヤー現在のステータス 】");
 	ImGui::Text("所持SP: %d", playerSP);
-	ImGui::Separator();
+	ImGui::SameLine();
+	ImGui::Text(" | 攻撃力: %.1f", playerAttackPower);
+	ImGui::SameLine();
+	ImGui::Text(" | 最大HP: %.1f", playerMaxHP);
+	ImGui::SameLine();
+	ImGui::Text(" | 移動速度: %.1f", playerMoveSpeed);
 
+	// SP獲得（レベルアップ）ボタンを枠内の右端に配置
+	ImGui::SameLine();
+	ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 180);
+	ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 5);
+	if (ImGui::Button("レベルアップ (SP+3)", ImVec2(150, 25))) {
+		playerSP += 3;
+	}
+
+	ImGui::EndChild(); // ステータス枠ここまで
+	ImGui::Spacing();
+
+	// ---------------------------------------------------
 	// 2. カテゴリー（タブ）の切り替え部分
+	// ---------------------------------------------------
 	if (ImGui::BeginTabBar("CategoryTabBar")) {
 		for (int i = 0; i < categories.size(); ++i) {
-			// タブを生成
 			if (ImGui::BeginTabItem(categories[i].GetName().c_str())) {
 				currentCategoryIndex = i;
 
@@ -87,8 +153,65 @@ void SkillTreeManager::Draw() {
 				ImGui::Text("--- %s ツリー ---", categories[i].GetName().c_str());
 				ImGui::Spacing();
 
-				// 3. タブの中身（スキル一覧）を表示
+				// ---------------------------------------------------
+				// 3. スキル表示用のキャンバス（タブの下にぴったり配置）
+				// ---------------------------------------------------
+				// 縦幅を「0」にすることで、ウィンドウの残りのスペース全体に自動で広がります
+				ImGui::BeginChild("TreeCanvas", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+				// タブの中身（スキル一覧）を表示
 				for (auto& skill : categories[i].GetSkills()) {
+
+					// スキルのIDに応じて配置する座標（X, Y）を決める
+					float posX = 0.0f;
+					float posY = 0.0f;
+
+					switch (skill.id) {
+					// --- 腕立て伏せルート（左側） ---
+					case 1:
+						posX = 150.0f;
+						posY = 40.0f;
+						break;
+					case 2:
+						posX = 50.0f;
+						posY = 220.0f;
+						break;
+					case 3:
+						posX = 250.0f;
+						posY = 220.0f;
+						break;
+
+					// --- スクワットルート（右側） ---
+					case 4:
+						posX = 650.0f;
+						posY = 40.0f;
+						break;
+					case 5:
+						posX = 550.0f;
+						posY = 220.0f;
+						break;
+					case 6:
+						posX = 750.0f;
+						posY = 220.0f;
+						break;
+
+					// --- 体技：体当たり ---
+					case 101:
+						posX = 400.0f;
+						posY = 130.0f;
+						break;
+
+					default:
+						posX = 50.0f;
+						posY = 50.0f;
+						break;
+					}
+
+					// 指定した座標に描画位置を強制移動させる
+					ImGui::SetCursorPos(ImVec2(posX, posY));
+
+					// 1つのスキルを四角いグループ（ノード）としてまとめる
+					ImGui::BeginGroup();
 
 					// スキルの状態によって文字の色を変える
 					if (skill.state == SkillState::Locked) {
@@ -99,40 +222,41 @@ void SkillTreeManager::Draw() {
 						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 0.0f, 1.0f)); // 緑色
 					}
 
-					// スキルの情報をテキスト表示
-					ImGui::Text("[%s] Lv:%d/%d (必要SP:%d)", skill.name.c_str(), skill.currentLv, skill.maxLv, skill.requiredSP);
+					// スキル名
+					ImGui::Text("%s", skill.name.c_str());
+					ImGui::PopStyleColor();
 
-					ImGui::PopStyleColor(); // 色を元に戻す
+					// レベル表示（プログレスバー）
+					float progress = (float)skill.currentLv / (float)skill.maxLv;
+					std::string barLabel = std::to_string(skill.currentLv) + "/" + std::to_string(skill.maxLv);
+					ImGui::ProgressBar(progress, ImVec2(120, 15), barLabel.c_str());
 
-					ImGui::SameLine();
-
-					// ボタンの作成
+					// ボタンまたは状態テキスト
 					if (skill.state == SkillState::Locked) {
-						ImGui::Text(" (ロック中) ");
+						ImGui::TextDisabled("[ロック中]");
 					} else if (skill.state == SkillState::Unlocked) {
-						ImGui::Text(" (マスター!) ");
+						ImGui::Text("[マスター]");
 					} else {
-						// 解放可能状態なら、ボタンを設置
-						std::string buttonLabel = "習得する##" + std::to_string(skill.id);
-						if (ImGui::Button(buttonLabel.c_str())) {
+						char buf[64];
+						sprintf_s(buf, "習得 (SP:%d)##%d", skill.requiredSP, skill.id);
+						if (ImGui::Button(buf, ImVec2(120, 22))) {
 							if (playerSP >= skill.requiredSP) {
 								playerSP -= skill.requiredSP;
 								skill.LevelUp();
+								ApplySkillEffect(skill.id);
 								categories[i].UpdateSkillStates();
 							}
 						}
 					}
-
-					// スキルの説明文
-					ImGui::TextDisabled("   説明: %s", skill.description.c_str());
-					ImGui::Separator();
+					ImGui::EndGroup(); // スキルノードここまで
 				}
 
+				ImGui::EndChild(); // TreeCanvasここまで
 				ImGui::EndTabItem();
 			}
 		}
 		ImGui::EndTabBar();
 	}
 
-	ImGui::End();
+	ImGui::End(); // メインの「スキルツリー 開発画面」ウィンドウここまで
 }
